@@ -1,4 +1,5 @@
 import os
+import re
 from googleapiclient.discovery import build
 
 # the api key is in the windows environment's path area. You are calling it from OS with it's name
@@ -37,6 +38,18 @@ vid_request = yt_service.videos().list(
 
 vid_response = vid_request.execute()
 
+hours_pattern = re.compile(r'(\d+)H')
+minutes_pattern = re.compile(r'(\d+)M')
+seconds_pattern = re.compile(r'(\d+)S')
+
 for item in vid_response['items']:
-    print(item)
+    duration = item['contentDetails']['duration']
+
+    hours = hours_pattern.search(duration)
+    hours = int(hours.group(1)) if hours else 0
+    minutes = minutes_pattern.search(duration)
+    minutes = int(minutes.group(1)) if minutes else 0
+    seconds = seconds_pattern.search(duration)
+    seconds = int(seconds.group(1)) if seconds else 0
+    print("{}H {}M {}S".format(hours, minutes, seconds))
     print()
