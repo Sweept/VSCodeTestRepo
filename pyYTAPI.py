@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import timedelta
 from googleapiclient.discovery import build
 
 # the api key is in the windows environment's path area. You are calling it from OS with it's name
@@ -51,5 +52,13 @@ for item in vid_response['items']:
     minutes = int(minutes.group(1)) if minutes else 0
     seconds = seconds_pattern.search(duration)
     seconds = int(seconds.group(1)) if seconds else 0
+
+    video_seconds = timedelta(
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds
+    ).total_seconds()
+
     print("{}H {}M {}S".format(hours, minutes, seconds))
+    print(video_seconds)
     print()
