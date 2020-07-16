@@ -19,46 +19,65 @@ yt_service = build("youtube", "v3", developerKey=api_key)
 #    part='contentDetails, snippet',
 #    channelId="UCykE3qY-wFLmUMSuryhnS1g"
 # )
-pl_items_request = yt_service.playlistItems().list(
-    part='contentDetails',
-    playlistId="PLF9AzKys0492RIcAJjZBIcoqNUtZ6kt79"
-)
-
-pl_response = pl_items_request.execute()
-
-vid_ids = []
-for item in pl_response['items']:
-    vid_ids.append(item['contentDetails']['videoId'])
-
-print(','.join(vid_ids))
-
-vid_request = yt_service.videos().list(
-    part='contentDetails',
-    id=','.join(vid_ids)
-)
-
-vid_response = vid_request.execute()
 
 hours_pattern = re.compile(r'(\d+)H')
 minutes_pattern = re.compile(r'(\d+)M')
 seconds_pattern = re.compile(r'(\d+)S')
 
-for item in vid_response['items']:
-    duration = item['contentDetails']['duration']
+total_seconds = 0
+nextPageToken = None
+while True:
+    pl_items_request = yt_service.playlistItems().list(
+        part='contentDetails',
+        playlistId="PLF9AzKys0492RIcAJjZBIcoqNUtZ6kt79",
+        maxResults=50,
+        pageToken=nextPageToken
+    )
 
-    hours = hours_pattern.search(duration)
-    hours = int(hours.group(1)) if hours else 0
-    minutes = minutes_pattern.search(duration)
-    minutes = int(minutes.group(1)) if minutes else 0
-    seconds = seconds_pattern.search(duration)
-    seconds = int(seconds.group(1)) if seconds else 0
+    pl_response = pl_items_request.execute()
 
-    video_seconds = timedelta(
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds
-    ).total_seconds()
+    vid_ids = []
+    for item in pl_response['items']:
+        vid_ids.append(item['contentDetails']['videoId'])
 
-    print("{}H {}M {}S".format(hours, minutes, seconds))
-    print(video_seconds)
-    print()
+    # print(','.join(vid_ids))
+
+    vid_request = yt_service.videos().list(
+        part='contentDetails',
+        id=','.join(vid_ids)
+    )
+
+    vid_response = vid_request.execute()
+
+    for item in vid_response['items']:
+        duration = item['contentDetails']['duration']
+
+        hours = hours_pattern.search(duration)
+        hours = int(hours.group(1)) if hours else 0
+        minutes = minutes_pattern.search(duration)
+        minutes = int(minutes.group(1)) if minutes else 0
+        seconds = seconds_pattern.search(duration)
+        seconds = int(seconds.group(1)) if seconds else 0
+
+        video_seconds = timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds
+        ).total_seconds()
+
+        total_seconds += video_seconds
+        # print("{}H {}M {}S".format(hours, minutes, seconds))
+        # print(video_seconds)
+        # print()
+
+    nextPageToken = pl_response.get('nextPageToken')
+
+    if not nextPageToken:
+        break
+
+total_seconds = int(total_seconds)
+
+minutes, seconds = divmod(total_seconds, 60)
+hours, minutes = divmod(minutes, 60)
+
+print("This Playlist is {}H {}M {}S in Total".format(hours, minutes, seconds))
